@@ -33,12 +33,30 @@ use crate::literals::LiteralLongId;
 use crate::substitution::{GenericSubstitution, SemanticRewriter, SubstitutionRewriter};
 use crate::types::resolve_type;
 use crate::{ConcreteFunction, ConcreteTypeId, FunctionId, FunctionLongId, GenericArgumentId, GenericParam, TypeId, TypeLongId};
+use crate::lookup_item::HasResolverData;
 
 #[cfg(test)]
 mod test;
 
 mod item;
 pub mod scope;
+
+macro_rules! define_check_is_visible {
+    ($name:ident, $item_id:ident, $item_ty:ty, $kind:ident) => {
+        fn $name(
+            &mut self,
+            diagnostics: &mut SemanticDiagnostics,
+            identifier: &ast::TerminalIdentifier,
+            $item_id: $item_ty,
+        ) -> Maybe<()> {
+            if !$item_id.visible_in(self.db, self.module_file_id.0)? {
+                return Err(diagnostics.report(identifier, $kind { $item_id: $item_id.clone() }));
+            } else {
+                Ok(())
+            }
+        }
+    };
+}
 
 /// Lookback maps for item resolving. Can be used to quickly check what is the semantic resolution
 /// of any path segment.
@@ -886,150 +904,23 @@ impl<'db> Resolver<'db> {
         })
     }
 
-    fn check_constant_is_visible(
-        &mut self,
-        diagnostics: &mut SemanticDiagnostics,
-        identifier: &ast::TerminalIdentifier,
-        constant_id: &ConstantId,
-    ) -> Maybe<()> {
-        let module_id = self.module_file_id.0;
-        if !self.db.constant_visible_in(*constant_id, module_id)? {
-            return Err(diagnostics.report(identifier, ConstantNotVisible {
-                constant_id: constant_id.clone()
-            }))
-        } else {
-            Ok(())
-        }
-    }
+    define_check_is_visible!(check_constant_is_visible, constant_id, &ConstantId, ConstantNotVisible);
 
-    fn check_submodule_is_visible(
-        &mut self,
-        diagnostics: &mut SemanticDiagnostics,
-        identifier: &ast::TerminalIdentifier,
-        submodule_id: &SubmoduleId,
-    ) -> Maybe<()> {
-        let source_module_id = ModuleId::Submodule(*submodule_id);
-        let module_id = self.module_file_id.0;
-        if !self.db.module_visible_in(source_module_id, module_id)? {
-            return Err(diagnostics.report(identifier, ModuleNotVisible {
-                module_id: source_module_id
-            }))
-        } else {
-            Ok(())
-        }
-    }
+    define_check_is_visible!(check_submodule_is_visible, submodule_id, &SubmoduleId, SubmoduleNotVisible);
 
-    fn check_extern_function_is_visible(
-        &mut self,
-        diagnostics: &mut SemanticDiagnostics,
-        identifier: &ast::TerminalIdentifier,
-        extern_function_id: &ExternFunctionId,
-    ) -> Maybe<()> {
-        let module_id = self.module_file_id.0;
-        if !self.db.extern_function_visible_in(*extern_function_id, module_id)? {
-            return Err(diagnostics.report(identifier, ExternFunctionNotVisible {
-                extern_function_id: extern_function_id.clone()
-            }));
-        } else {
-            Ok(())
-        }
-    }
+    define_check_is_visible!(check_free_function_is_visible, free_function_id, &FreeFunctionId, FreeFunctionNotVisible);
 
-    fn check_free_function_is_visible(
-        &mut self,
-        diagnostics: &mut SemanticDiagnostics,
-        identifier: &ast::TerminalIdentifier,
-        free_function_id: &FreeFunctionId,
-    ) -> Maybe<()> {
-        let module_id = self.module_file_id.0;
-        if !self.db.free_function_visible_in(*free_function_id, module_id)? {
-            return Err(diagnostics.report(identifier, FreeFunctionNotVisible {
-                free_function_id: free_function_id.clone()
-            }));
-        } else {
-            Ok(())
-        }
-    }
+    define_check_is_visible!(check_extern_function_is_visible, extern_function_id, &ExternFunctionId, ExternFunctionNotVisible);
 
-    fn check_enum_is_visible(
-        &mut self,
-        diagnostics: &mut SemanticDiagnostics,
-        identifier: &ast::TerminalIdentifier,
-        enum_id: &EnumId,
-    ) -> Maybe<()> {
-        let module_id = self.module_file_id.0;
-        if !self.db.enum_visible_in(*enum_id, module_id)? {
-            return Err(diagnostics.report(identifier, EnumNotVisible {
-                enum_id: enum_id.clone()
-            }));
-        } else {
-            Ok(())
-        }
-    }
+    define_check_is_visible!(check_enum_is_visible, enum_id, &EnumId, EnumNotVisible);
 
-    fn check_struct_is_visible(
-        &mut self,
-        diagnostics: &mut SemanticDiagnostics,
-        identifier: &ast::TerminalIdentifier,
-        struct_id: &StructId,
-    ) -> Maybe<()> {
-        let module_id = self.module_file_id.0;
-        if !self.db.struct_visible_in(*struct_id, module_id)? {
-            return Err(diagnostics.report(identifier, StructNotVisible {
-                struct_id: struct_id.clone()
-            }));
-        } else {
-            Ok(())
-        }
-    }
+    define_check_is_visible!(check_struct_is_visible, struct_id, &StructId, StructNotVisible);
 
-    fn check_extern_type_is_visible(
-        &mut self,
-        diagnostics: &mut SemanticDiagnostics,
-        identifier: &ast::TerminalIdentifier,
-        extern_type_id: &ExternTypeId,
-    ) -> Maybe<()> {
-        let module_id = self.module_file_id.0;
-        if !self.db.extern_type_visible_in(*extern_type_id, module_id)? {
-            return Err(diagnostics.report(identifier, ExternTypeNotVisible {
-                extern_type_id: extern_type_id.clone()
-            }));
-        } else {
-            Ok(())
-        }
-    }
+    define_check_is_visible!(check_extern_type_is_visible, extern_type_id, &ExternTypeId, ExternTypeNotVisible);
 
-    fn check_type_alias_is_visible(
-        &mut self,
-        diagnostics: &mut SemanticDiagnostics,
-        identifier: &ast::TerminalIdentifier,
-        type_alias_id: &TypeAliasId,
-    ) -> Maybe<()> {
-        let module_id = self.module_file_id.0;
-        if !self.db.type_alias_visible_in(*type_alias_id, module_id)? {
-            return Err(diagnostics.report(identifier, TypeAliasNotVisible {
-                type_alias_id: type_alias_id.clone()
-            }));
-        } else {
-            Ok(())
-        }
-    }
+    define_check_is_visible!(check_type_alias_is_visible, type_alias_id, &TypeAliasId, TypeAliasNotVisible);
 
-    fn check_trait_is_visible(
-        &mut self,
-        diagnostics: &mut SemanticDiagnostics,
-        identifier: &ast::TerminalIdentifier,
-        trait_id: &TraitId,
-    ) -> Maybe<()> {
-        let module_id = self.module_file_id.0;
-        if !self.db.trait_visible_in(*trait_id, module_id)? {
-            return Err(diagnostics.report(identifier, TraitNotVisible {
-                trait_id: trait_id.clone()
-            }));
-        } else {
-            Ok(())
-        }
-    }
+    define_check_is_visible!(check_trait_is_visible, trait_id, &TraitId, TraitNotVisible);
 
     fn check_module_item_is_visible(
         &mut self,
