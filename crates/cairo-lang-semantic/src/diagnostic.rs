@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use cairo_lang_debug::DebugWithDb;
 use cairo_lang_defs::diagnostic_utils::StableLocation;
-use cairo_lang_defs::ids::{ConstantId, EnumId, ExternFunctionId, ExternTypeId, FreeFunctionId, FunctionTitleId, ImplDefId, ImplFunctionId, ModuleFileId, ModuleId, StructId, TopLevelLanguageElementId, TraitFunctionId, TraitId, TypeAliasId};
+use cairo_lang_defs::ids::{ConstantId, EnumId, ExternFunctionId, ExternTypeId, FreeFunctionId, FunctionTitleId, ImplDefId, ImplFunctionId, ModuleFileId, StructId, SubmoduleId, TopLevelLanguageElementId, TraitFunctionId, TraitId, TypeAliasId};
 use cairo_lang_defs::plugin::PluginDiagnostic;
 use cairo_lang_diagnostics::{
     DiagnosticAdded, DiagnosticEntry, DiagnosticLocation, Diagnostics, DiagnosticsBuilder,
@@ -604,8 +604,8 @@ impl DiagnosticEntry for SemanticDiagnostic {
             SemanticDiagnosticKind::ConstantNotVisible { constant_id } => {
                 format!(r#"Constant "{}" is not visible"#, constant_id.full_path(db.upcast()))
             }
-            SemanticDiagnosticKind::ModuleNotVisible { module_id } => {
-                format!(r#"Module "{}" is not visible"#, module_id.full_path(db.upcast()))
+            SemanticDiagnosticKind::SubmoduleNotVisible { submodule_id: module_id } => {
+                format!(r#"Submodule "{}" is not visible"#, module_id.full_path(db.upcast()))
             }
             SemanticDiagnosticKind::ExternFunctionNotVisible { extern_function_id } => {
                 format!(r#"Extern function "{}" is not visible"#, extern_function_id.full_path(db.upcast()))
@@ -917,8 +917,8 @@ pub enum SemanticDiagnosticKind {
     ConstantNotVisible {
         constant_id: ConstantId
     },
-    ModuleNotVisible {
-        module_id: ModuleId
+    SubmoduleNotVisible {
+        submodule_id: SubmoduleId
     },
     ExternFunctionNotVisible {
         extern_function_id: ExternFunctionId

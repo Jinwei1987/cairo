@@ -93,28 +93,6 @@ pub trait SemanticGroup:
     #[salsa::interned]
     fn intern_impl_var(&self, id: ImplVar) -> ImplVarId;
 
-    // Visibility
-    #[salsa::invoke(items::visibilities::constant_visible_in)]
-    fn constant_visible_in(&self, constant_id: ConstantId, module_id: ModuleId) -> Maybe<bool>;
-    #[salsa::invoke(items::visibilities::module_visible_in)]
-    fn module_visible_in(&self, source_module_id: ModuleId, module_id: ModuleId) -> Maybe<bool>;
-    #[salsa::invoke(items::visibilities::extern_function_visible_in)]
-    fn extern_function_visible_in(&self, extern_function_id: ExternFunctionId, module_id: ModuleId) -> Maybe<bool>;
-    #[salsa::invoke(items::visibilities::free_function_visible_in)]
-    fn free_function_visible_in(&self, free_function_id: FreeFunctionId, module_id: ModuleId) -> Maybe<bool>;
-    #[salsa::invoke(items::visibilities::enum_visible_in)]
-    fn enum_visible_in(&self, enum_id: EnumId, module_id: ModuleId) -> Maybe<bool>;
-    #[salsa::invoke(items::visibilities::struct_visible_in)]
-    fn struct_visible_in(&self, struct_id: StructId, module_id: ModuleId) -> Maybe<bool>;
-    #[salsa::invoke(items::visibilities::extern_type_visible_in)]
-    fn extern_type_visible_in(&self, extern_type_id: ExternTypeId, module_id: ModuleId) -> Maybe<bool>;
-    #[salsa::invoke(items::visibilities::type_alias_visible_in)]
-    fn type_alias_visible_in(&self, type_alias_id: TypeAliasId, module_id: ModuleId) -> Maybe<bool>;
-    #[salsa::invoke(items::visibilities::trait_visible_in)]
-    fn trait_visible_in(&self, trait_id: TraitId, module_id: ModuleId) -> Maybe<bool>;
-    #[salsa::invoke(items::visibilities::struct_member_visible_in)]
-    fn struct_member_visible_in(&self, struct_id: StructId, member_name: SmolStr, module_id: ModuleId) -> Maybe<bool>;
-
     // Const.
     // ====
     /// Private query to compute data about a constant definition.
